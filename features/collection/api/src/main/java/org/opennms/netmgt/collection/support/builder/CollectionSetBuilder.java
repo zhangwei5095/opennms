@@ -47,6 +47,7 @@ import org.opennms.netmgt.collection.support.AbstractCollectionAttribute;
 import org.opennms.netmgt.collection.support.AbstractCollectionAttributeType;
 import org.opennms.netmgt.collection.support.AbstractCollectionResource;
 import org.opennms.netmgt.collection.support.MultiResourceCollectionSet;
+import org.opennms.netmgt.config.datacollection.AttributeType;
 
 /**
  * A fluent API for building a {@link CollectionSet}.
