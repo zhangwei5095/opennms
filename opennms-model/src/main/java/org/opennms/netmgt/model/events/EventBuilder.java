@@ -54,12 +54,21 @@ import org.springframework.util.StringUtils;
  * <p>EventBuilder class.</p>
  */
 public class EventBuilder {
-	
-	private static final Logger LOG = LoggerFactory.getLogger(EventBuilder.class);
 
-    
+    private static final Logger LOG = LoggerFactory.getLogger(EventBuilder.class);
+
     private Event m_event;
-    
+
+    /**
+     * <p>Constructor for EventBuilder.</p>
+     *
+     * @param uei a {@link java.lang.String} object.
+     * @param source a {@link java.lang.String} object.
+     */
+    public EventBuilder() {
+        m_event = new Event();
+    }
+
     /**
      * <p>Constructor for EventBuilder.</p>
      *
