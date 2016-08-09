@@ -30,11 +30,12 @@ package org.opennms.web.rest.v1;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.util.Map;
 
-import com.google.common.collect.Lists;
+import javax.ws.rs.WebApplicationException;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -52,6 +53,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.google.common.collect.Lists;
 
 /**
  * Tests the Measurements API with an JRB backend.
@@ -87,6 +90,32 @@ public class MeasurementsRestServiceWithJrbIT extends MeasurementsRestServiceITC
 
         m_resourceStorageDao.setRrdDirectory(rrdDirectory);
         System.setProperty("rrd.base.dir", rrdDirectory.getAbsolutePath());
+    }
+
+    @Test
+    public void canRetrieveMeasurementsWithRelaxedModeFromJrb() {
+        QueryRequest request = new QueryRequest();
+        // Enable relaxed mode
+        request.setRelaxed(true);
+        request.setStart(1414602000000L);
+        request.setEnd(1417046400000L);
+        request.setStep(1000L);
+
+        Source ifInOctetsAvg = new Source();
+        ifInOctetsAvg.setResourceId("node[1].interfaceSnmp[eth0-04013f75f101]");
+        // This resource does not exist
+        ifInOctetsAvg.setAttribute("ifInOctets!!");
+        ifInOctetsAvg.setAggregation("AVERAGE");
+        ifInOctetsAvg.setLabel("ifInOctetsAvg");
+
+        // Perform the query
+        try {
+            m_svc.query(request);
+            fail("Expected 204, but no WebApplicationException was thrown.");
+        } catch (WebApplicationException e) {
+            // The query should fail with a 204
+            assertEquals(204, e.getResponse().getStatus());
+        }
     }
 
     @Test

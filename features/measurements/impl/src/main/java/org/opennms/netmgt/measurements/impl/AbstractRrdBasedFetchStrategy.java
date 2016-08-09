@@ -29,6 +29,7 @@
 package org.opennms.netmgt.measurements.impl;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -112,12 +113,20 @@ public abstract class AbstractRrdBasedFetchStrategy implements MeasurementFetchS
 
     /**
      *  Performs the actual retrieval of the values from the RRD/JRB files.
-     *  If relaxed is <code>true</code> the {@link FetchResults} is populated with {@link Double#NaN} for all missing
-     *  entries.
+     *
+     *  If relaxed is <code>true</code> an empty response will be generated if there
+     *  are no RRD/JRB files to query.
+     *
+     *  If relaxed is <code>true</code> and one or more RRD/JRB files are present,
+     *  then {@link FetchResults} will be populated with {@link Double#NaN} for all missing entries.
      */
     private FetchResults fetchMeasurements(long start, long end, long step, int maxrows,
                                            Map<Source, String> rrdsBySource, Map<String, Object> constants,
                                            List<Source> sources, boolean relaxed) throws RrdException {
+        if (relaxed && rrdsBySource.size() == 0) {
+            // See NMS-8665
+            return new FetchResults(new long[0], Collections.emptyMap(), step, constants);
+        }
         FetchResults fetchResults = fetchMeasurements(start, end, step, maxrows, rrdsBySource, constants);
         if (relaxed) {
             Utils.fillMissingValues(fetchResults, sources);
