@@ -26,48 +26,48 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.features.topology.netutils.internal.service;
+package org.opennms.netmgt.icmp.proxy;
 
 import java.util.Objects;
-import java.util.stream.LongStream;
 
-public class PingResultSummary {
+public class PingSequence {
+    private boolean timeout;
+    private Throwable error;
+    private PingResponse response;
+    private int sequenceNumber;
 
-    private PingResult result;
-
-    PingResultSummary(PingResult result) {
-        this.result = Objects.requireNonNull(result);
+    public PingSequence(int sequenceNumber, PingResponse response) {
+        this.response = Objects.requireNonNull(response);
+        this.sequenceNumber = sequenceNumber;
+        this.timeout = response.getRtt() == Double.POSITIVE_INFINITY;
     }
 
-    public int getPacketsTransmitted() {
-        return result.getSequences().size();
+    public PingSequence(int sequenceNumber, Throwable throwable) {
+        this.error = Objects.requireNonNull(throwable);
+        this.sequenceNumber = sequenceNumber;
     }
 
-    public double getPacketLoss() {
-        return 1.0 - (double) getPacketsReceived() / (double) getPacketsTransmitted();
+    public boolean isTimeout() {
+        return timeout;
     }
 
-    public int getPacketsReceived() {
-        return (int) result.getSequences().stream().filter(eachSequence -> eachSequence.isSuccess()).count();
+    public boolean isError() {
+        return error != null;
     }
 
-    public long getMin() {
-        return getDiffTimeNanos().min().orElse(0);
+    public int getSequenceNumber() {
+        return sequenceNumber;
     }
 
-    public double getAvg() {
-        return getDiffTimeNanos().average().orElse(0);
+    public Throwable getError() {
+        return error;
     }
 
-    public long getMax() {
-        return getDiffTimeNanos().max().orElse(0);
+    public boolean isSuccess() {
+        return !isTimeout() && !isError();
     }
 
-    public double getStdDev() {
-        return getAvg() - getMin();
-    }
-
-    private LongStream getDiffTimeNanos() {
-        return result.getSequences().stream().filter(eachSequence -> eachSequence.isSuccess()).mapToLong(eachSequence -> eachSequence.getResponse().getReceivedTimeNanos() - eachSequence.getResponse().getSentTimeNanos());
+    public PingResponse getResponse() {
+        return response;
     }
 }

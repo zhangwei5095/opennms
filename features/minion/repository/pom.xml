@@ -52,6 +52,7 @@
                                 <feature>minion-heartbeat</feature>
                                 <feature>minion-snmp-proxy</feature>
                                 <feature>minion-provisiond-detectors</feature>
+                                <feature>minion-icmp-proxy</feature>
                             </features>
                             <repository>target/maven-repo</repository>
                         </configuration>

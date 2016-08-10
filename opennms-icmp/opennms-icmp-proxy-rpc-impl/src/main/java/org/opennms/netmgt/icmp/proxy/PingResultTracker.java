@@ -26,53 +26,37 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.features.topology.netutils.internal.service;
+package org.opennms.netmgt.icmp.proxy;
 
 import java.net.InetAddress;
-import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import org.opennms.netmgt.icmp.EchoPacket;
 import org.opennms.netmgt.icmp.PingResponseCallback;
 
-public class PingServiceResponseCallback implements PingResponseCallback {
-
-    private final PingResult result;
-    private final PingService.Callback uiCallback;
-
-    PingServiceResponseCallback(PingRequest request, PingService.Callback uiCallback) {
-        this.result = new PingResult(Objects.requireNonNull(request));
-        this.uiCallback = Objects.requireNonNull(uiCallback);
-        uiCallback.onUpdate(result);
-    }
+public class PingResultTracker extends CompletableFuture<PingResponseDTO> implements PingResponseCallback {
 
     @Override
     public void handleResponse(InetAddress address, EchoPacket response) {
-        result.addSequence(new PingSequence(response));
-        notifyUI();
+        PingResponseDTO responseDTO = new PingResponseDTO();
+        responseDTO.setRtt(response.elapsedTime(TimeUnit.MILLISECONDS));
+        complete(responseDTO);
     }
 
     @Override
     public void handleTimeout(InetAddress address, EchoPacket request) {
-        PingSequence sequence = new PingSequence(request, true);
-        // Somehow the timeout is also invoked if an error occurred.
-        // We do not want the sequence to occur twice, on error.
-        if (!result.hasSequence(sequence.getSequenceNumber())) {
-            result.addSequence(sequence);
-            notifyUI();
+        PingResponseDTO responseDTO = new PingResponseDTO();
+        responseDTO.setRtt(Double.POSITIVE_INFINITY);
+        if (!isDone()) {
+            complete(responseDTO);
         }
     }
 
     @Override
     public void handleError(InetAddress address, EchoPacket request, Throwable t) {
-        result.addSequence(new PingSequence(request, t));
-        notifyUI();
-    }
-
-    protected boolean isDone() {
-        return result.isComplete();
-    }
-
-    protected void notifyUI() {
-        uiCallback.onUpdate(result);
+        if (!isDone()) {
+            completeExceptionally(t);
+        }
     }
 }

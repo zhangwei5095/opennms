@@ -32,8 +32,11 @@
       <artifactId>tracker-dependencies</artifactId>
       <type>pom</type>
     </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+    </dependency>
   </dependencies>
-    
   <repositories>
     <repository>
       <snapshots><enabled>false</enabled></snapshots>
@@ -43,5 +46,4 @@
       <url>http://maven.opennms.org/content/groups/opennms.org-release</url>
     </repository>
   </repositories>
-
 </project>

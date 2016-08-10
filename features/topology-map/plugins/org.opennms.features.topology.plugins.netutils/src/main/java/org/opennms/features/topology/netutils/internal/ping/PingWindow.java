@@ -26,14 +26,20 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.features.topology.netutils.internal;
+package org.opennms.features.topology.netutils.internal.ping;
 
+import java.net.InetAddress;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
-import org.opennms.core.utils.InetAddressUtils;
 import org.opennms.features.topology.api.topo.Vertex;
-import org.opennms.features.topology.netutils.internal.service.PingRequest;
-import org.opennms.features.topology.netutils.internal.service.PingService;
+import org.opennms.netmgt.icmp.proxy.LocationAwarePingClient;
+import org.opennms.netmgt.icmp.proxy.PingStringUtils;
+import org.opennms.netmgt.icmp.proxy.PingSummary;
+import org.opennms.netmgt.model.OnmsNode;
 
 import com.vaadin.data.fieldgroup.FieldGroup;
 import com.vaadin.shared.ui.label.ContentMode;
@@ -84,22 +90,28 @@ public class PingWindow extends Window {
      */
     private final PingForm pingForm;
 
+    private CompletableFuture<PingSummary> pingFuture;
+
     /**
      * Creates the PingWindow to make ping requests.
      *
      * @param vertex The vertex which IP Address is pinged.
      *               It is expected that the IP Address os not null and parseable.
-     * @param pingService The {@link PingService} to actually make the ping request.
+     * @param pingClient A client to ping addresses
      */
-    public PingWindow(Vertex vertex, PingService pingService) {
-        Objects.requireNonNull(vertex);
-        Objects.requireNonNull(pingService);
+    public PingWindow(LocationAwarePingClient pingClient, List<String> locations, List<InetAddress> ipAddresses, String defaultLocation, InetAddress defaultIp, String caption) {
+        Objects.requireNonNull(pingClient);
+        Objects.requireNonNull(ipAddresses);
+        Objects.requireNonNull(defaultIp);
+        Objects.requireNonNull(locations);
+        Objects.requireNonNull(defaultLocation);
+        Objects.requireNonNull(caption);
 
         // Remember initial poll interval, as we poll as soon as we start pinging
         final int initialPollInterval = UI.getCurrent().getPollInterval();
 
         // Ping Form
-        pingForm = new PingForm(InetAddressUtils.getInetAddress(vertex.getIpAddress()));
+        pingForm = new PingForm(locations, defaultLocation, ipAddresses, defaultIp);
 
         // Result
         final TextArea resultArea = new TextArea();
@@ -113,7 +125,7 @@ public class PingWindow extends Window {
         // Buttons
         cancelButton = new Button("Cancel");
         cancelButton.addClickListener((event) -> {
-            pingService.cancel();
+            cancel(pingFuture);
             resultArea.setValue(resultArea.getValue() + "\n" + "Ping cancelled by user");
             getUI().setPollInterval(initialPollInterval);
             setRunning(false);
@@ -121,17 +133,27 @@ public class PingWindow extends Window {
         pingButton = new Button("Ping");
         pingButton.addClickListener((event) -> {
                 try {
-                    final PingRequest pingRequest = pingForm.getPingRequest();
                     setRunning(true);
                     getUI().setPollInterval(POLL_INTERVAL);
                     resultArea.setValue(""); // Clear
-                    pingService.ping(pingRequest, (result) -> {
-                        setRunning(!result.isComplete());
-                        resultArea.setValue(result.toDetailString());
-                        if (result.isComplete()) {
-                            getUI().setPollInterval(initialPollInterval);
-                        }
-                    });
+
+                    final PingRequest pingRequest = pingForm.getPingRequest();
+                    pingFuture = pingClient.ping(pingRequest.getInetAddress())
+                            .withRetries(pingRequest.getRetries())
+                            .withPacketSize(pingRequest.getPacketSize())
+                            .withTimeout(pingRequest.getTimeout(), TimeUnit.MILLISECONDS)
+                            .withLocation(pingRequest.getLocation())
+                            .withNumberOfRequests(pingRequest.getNumberRequests())
+                            .withProgressCallback((newSequence, summary) -> {
+                                getUI().access(() -> {
+                                    setRunning(!summary.isComplete());
+                                    resultArea.setValue(PingStringUtils.renderAll(summary));
+                                    if (summary.isComplete()) {
+                                        getUI().setPollInterval(initialPollInterval);
+                                    }
+                                });
+                            })
+                            .execute();
                 } catch (FieldGroup.CommitException e) {
                     Notification.show("Validation errors", "Please correct them. Make sure all required fields are set.", Notification.Type.ERROR_MESSAGE);
                 }
@@ -154,20 +176,30 @@ public class PingWindow extends Window {
         rootLayout.setExpandRatio(resultArea, 1.0f);
 
         // Window Config
-        setCaption(String.format("Ping - %s (%s)", vertex.getLabel(), vertex.getIpAddress()));
+        setCaption(caption);
         setResizable(false);
         setModal(true);
         setWidth(800, Unit.PIXELS);
-        setHeight(550, Unit.PIXELS);
+        setHeight(600, Unit.PIXELS);
         setContent(rootLayout);
         center();
         setRunning(false);
 
         // Set back to default, when closing
         addCloseListener((CloseListener) e -> {
-            pingService.cancel();
+            cancel(pingFuture);
             getUI().setPollInterval(initialPollInterval);
         });
+    }
+
+    private Optional<OnmsNode> getNodeIfAvailable(Vertex vertex) {
+        return null;
+    }
+
+    private static void cancel(CompletableFuture pingFuture) {
+        if (pingFuture != null) {
+            pingFuture.cancel(true);
+        }
     }
 
     private void setRunning(boolean running) {

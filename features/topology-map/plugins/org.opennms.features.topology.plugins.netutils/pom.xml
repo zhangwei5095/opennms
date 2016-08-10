@@ -54,7 +54,7 @@
 		</dependency>
         <dependency>
             <groupId>org.opennms</groupId>
-            <artifactId>opennms-icmp-api</artifactId>
+            <artifactId>org.opennms.icmp.proxy.rpc-impl</artifactId>
             <version>${project.version}</version>
 			<scope>provided</scope>
         </dependency>

@@ -8,3 +8,4 @@ minion-shell
 minion-heartbeat
 minion-snmp-proxy
 minion-provisiond-detectors
+minion-icmp-proxy

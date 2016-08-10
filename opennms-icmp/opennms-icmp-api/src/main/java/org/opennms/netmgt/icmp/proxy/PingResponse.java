@@ -26,58 +26,16 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.features.topology.netutils.internal.service;
+package org.opennms.netmgt.icmp.proxy;
 
-import java.util.concurrent.TimeUnit;
+public class PingResponse {
+    private double rtt;
 
-import org.opennms.netmgt.icmp.EchoPacket;
-
-class DummyEchoPacket implements EchoPacket {
-
-    private final int sequenceNumber;
-    private final int identifier;
-    private final long receivedTimeNanos;
-    private final long sentTimeNanos;
-
-    DummyEchoPacket(int identifier, int sequenceNumber, long receivedTimeNanos, long sentTimeNanos) {
-        this.identifier = identifier;
-        this.sequenceNumber = sequenceNumber;
-        this.receivedTimeNanos = receivedTimeNanos;
-        this.sentTimeNanos = sentTimeNanos;
+    public void setRtt(double rtt) {
+        this.rtt = rtt;
     }
 
-    @Override
-    public boolean isEchoReply() {
-        return true;
-    }
-
-    @Override
-    public int getIdentifier() {
-        return identifier;
-    }
-
-    @Override
-    public int getSequenceNumber() {
-        return sequenceNumber;
-    }
-
-    @Override
-    public long getThreadId() {
-        return 1;
-    }
-
-    @Override
-    public long getReceivedTimeNanos() {
-        return receivedTimeNanos;
-    }
-
-    @Override
-    public long getSentTimeNanos() {
-        return sentTimeNanos;
-    }
-
-    @Override
-    public double elapsedTime(TimeUnit timeUnit) {
-        return -1;
+    public double getRtt() {
+        return rtt;
     }
 }
