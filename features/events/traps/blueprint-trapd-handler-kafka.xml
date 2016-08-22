@@ -49,7 +49,7 @@
 		<route id="sendTrapViaKafka">
 			<from uri="seda:trapHandler"/>
 			<!-- Have to use StringEncoder because of camel bug CAMEL-8790 -->
-			<to uri="kafka:{{kafkaAddress}}?topic={{kafkatopic}}&amp;serializerClass=kafka.serializer.StringEncoder"/>
+			<to uri="kafka:{{kafkaAddress}}?topic={{kafkatopic}}&amp;serializerClass=org.apache.kafka.common.serialization.StringSerializer"/>
 		</route>
 	</camelContext>
 </blueprint>

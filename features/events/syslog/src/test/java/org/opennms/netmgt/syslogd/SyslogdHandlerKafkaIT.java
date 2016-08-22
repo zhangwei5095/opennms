@@ -33,9 +33,6 @@ import java.util.Dictionary;
 import java.util.Map;
 import java.util.Properties;
 
-import kafka.server.KafkaConfig;
-import kafka.server.KafkaServer;
-
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
@@ -55,15 +52,17 @@ import org.junit.runner.RunWith;
 import org.opennms.core.test.OpenNMSJUnit4ClassRunner;
 import org.opennms.core.test.camel.CamelBlueprintTest;
 import org.opennms.core.utils.InetAddressUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.test.context.ContextConfiguration;
+
+import kafka.server.KafkaConfig;
+import kafka.server.KafkaServer;
+import kafka.utils.MockTime;
+import kafka.utils.TestUtils;
+import kafka.utils.Time;
 
 @RunWith(OpenNMSJUnit4ClassRunner.class)
 @ContextConfiguration(locations = { "classpath:/META-INF/opennms/emptyContext.xml" })
 public class SyslogdHandlerKafkaIT extends CamelBlueprintTest {
-
-	private static final Logger LOG = LoggerFactory.getLogger(SyslogdHandlerKafkaIT.class);
 
 	private static KafkaConfig kafkaConfig;
 
@@ -96,7 +95,8 @@ public class SyslogdHandlerKafkaIT extends CamelBlueprintTest {
 		properties.put("zookeeper.connect",zkTestServer.getConnectString());
 		try{
 			kafkaConfig = new KafkaConfig(properties);
-			kafkaServer = new KafkaServer(kafkaConfig, null);
+            Time kafkaTime = new MockTime();
+            kafkaServer = TestUtils.createServer(kafkaConfig, kafkaTime);
 			kafkaServer.startup();
 		}
 		catch(Exception e){
@@ -155,7 +155,7 @@ public class SyslogdHandlerKafkaIT extends CamelBlueprintTest {
 		syslogd.addRoutes(new RouteBuilder(){
 			@Override
 			public void configure() throws Exception {
-				from("kafka:localhost:" + kafkaPort + "?topic=syslog&zookeeperHost=localhost&zookeeperPort=" + zookeeperPort + "&groupId=group1")
+				from("kafka:localhost:" + kafkaPort + "?topic=syslog&groupId=group1")
 				.process(new Processor() {
 					@Override
 					public void process(Exchange exchange) throws Exception {
@@ -189,7 +189,9 @@ public class SyslogdHandlerKafkaIT extends CamelBlueprintTest {
 	}
 
 	@After
-	public void shutDownKafka(){
-		kafkaServer.shutdown();
+	public void shutDownKafka() {
+        if (kafkaServer != null) {
+            kafkaServer.shutdown();
+        }
 	}
 }

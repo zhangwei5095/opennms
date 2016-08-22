@@ -33,10 +33,6 @@ import java.util.Dictionary;
 import java.util.Map;
 import java.util.Properties;
 
-import kafka.server.KafkaConfig;
-import kafka.server.KafkaServer;
-
-import org.apache.activemq.camel.component.ActiveMQComponent;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Component;
 import org.apache.camel.Exchange;
@@ -55,15 +51,17 @@ import org.junit.runner.RunWith;
 import org.opennms.core.test.OpenNMSJUnit4ClassRunner;
 import org.opennms.core.test.camel.CamelBlueprintTest;
 import org.opennms.netmgt.config.SyslogdConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.test.context.ContextConfiguration;
+
+import kafka.server.KafkaConfig;
+import kafka.server.KafkaServer;
+import kafka.utils.MockTime;
+import kafka.utils.TestUtils;
+import kafka.utils.Time;
 
 @RunWith(OpenNMSJUnit4ClassRunner.class)
 @ContextConfiguration(locations = { "classpath:/META-INF/opennms/emptyContext.xml" })
 public class SyslogHandlerKafkaDefaultIT extends CamelBlueprintTest {
-
-	private static final Logger LOG = LoggerFactory.getLogger(SyslogHandlerKafkaDefaultIT.class);
 
 	private static KafkaConfig kafkaConfig;
 
@@ -97,7 +95,8 @@ public class SyslogHandlerKafkaDefaultIT extends CamelBlueprintTest {
 		properties.put("zookeeper.connect",zkTestServer.getConnectString());
 		try{
 			kafkaConfig = new KafkaConfig(properties);
-			kafkaServer = new KafkaServer(kafkaConfig, null);
+			Time kafkaTime = new MockTime();
+			kafkaServer = TestUtils.createServer(kafkaConfig, kafkaTime);
 			kafkaServer.startup();
 		}
 		catch(Exception e){
@@ -158,7 +157,7 @@ public class SyslogHandlerKafkaDefaultIT extends CamelBlueprintTest {
 						exchange.getIn().setHeader(KafkaConstants.PARTITION_KEY, 1);
 						exchange.getIn().setHeader(KafkaConstants.KEY, "1");
 					}
-				}).to("kafka:localhost:" + kafkaPort + "?topic=syslog&serializerClass=kafka.serializer.StringEncoder");
+				}).to("kafka:localhost:" + kafkaPort + "?topic=syslog&serializerClass=org.apache.kafka.common.serialization.StringSerializer");
 			}
 		});
 
@@ -166,7 +165,7 @@ public class SyslogHandlerKafkaDefaultIT extends CamelBlueprintTest {
 			@Override
 			public void configure() throws Exception {
 
-				from("kafka:localhost:" + kafkaPort + "?topic=syslog&zookeeperHost=localhost&zookeeperPort=" + zookeeperPort + "&groupId=testing")
+				from("kafka:localhost:" + kafkaPort + "?topic=syslog&groupId=testing")
 				.process(new Processor() {
 					@Override
 					public void process(Exchange exchange) throws Exception {
@@ -196,7 +195,9 @@ public class SyslogHandlerKafkaDefaultIT extends CamelBlueprintTest {
 	}
 
 	@After
-	public void shutDownKafka(){
-		kafkaServer.shutdown();
+	public void shutDownKafka() {
+        if (kafkaServer != null) {
+            kafkaServer.shutdown();
+        }
 	}
 }

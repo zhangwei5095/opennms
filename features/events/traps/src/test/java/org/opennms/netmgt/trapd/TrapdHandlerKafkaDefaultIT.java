@@ -33,9 +33,6 @@ import java.util.Dictionary;
 import java.util.Map;
 import java.util.Properties;
 
-import kafka.server.KafkaConfig;
-import kafka.server.KafkaServer;
-
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
@@ -64,6 +61,12 @@ import org.opennms.test.JUnitConfigurationEnvironment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.test.context.ContextConfiguration;
+
+import kafka.server.KafkaConfig;
+import kafka.server.KafkaServer;
+import kafka.utils.MockTime;
+import kafka.utils.TestUtils;
+import kafka.utils.Time;
 
 @RunWith(OpenNMSJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {
@@ -112,7 +115,8 @@ public class TrapdHandlerKafkaDefaultIT extends CamelBlueprintTest {
 		properties.put("zookeeper.connect",zkTestServer.getConnectString());
 		try{
 			kafkaConfig = new KafkaConfig(properties);
-			kafkaServer = new KafkaServer(kafkaConfig, null);
+            Time kafkaTime = new MockTime();
+            kafkaServer = TestUtils.createServer(kafkaConfig, kafkaTime);
 			kafkaServer.startup();
 		}
 		catch(Exception e){
@@ -192,7 +196,7 @@ public class TrapdHandlerKafkaDefaultIT extends CamelBlueprintTest {
 						exchange.getIn().setHeader(KafkaConstants.PARTITION_KEY, 1);
 						exchange.getIn().setHeader(KafkaConstants.KEY, "1");
 					}
-				}).to("kafka:localhost:9092?topic=trapd&serializerClass=kafka.serializer.StringEncoder");
+				}).to("kafka:localhost:9092?topic=trapd&serializerClass= org.apache.kafka.common.serialization.StringSerializer");
 			}
 		});
 
@@ -200,7 +204,7 @@ public class TrapdHandlerKafkaDefaultIT extends CamelBlueprintTest {
 			@Override
 			public void configure() throws Exception {
 
-				from("kafka:localhost:9092?topic=trapd&zookeeperHost=localhost&zookeeperPort=2181&groupId=testing")
+				from("kafka:localhost:9092?topic=trapd&groupId=testing")
 				.process(new Processor() {
 					@Override
 					public void process(Exchange exchange) throws Exception {
@@ -233,7 +237,9 @@ public class TrapdHandlerKafkaDefaultIT extends CamelBlueprintTest {
 	}
 
 	@After
-	public void shutDownKafka(){
-		kafkaServer.shutdown();
+	public void shutDownKafka() {
+        if (kafkaServer != null) {
+            kafkaServer.shutdown();
+        }
 	}
 }

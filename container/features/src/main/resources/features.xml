@@ -755,6 +755,7 @@
 
     <feature name="opennms-syslogd-listener-javanet" description="OpenNMS :: Syslogd :: Listener :: java.net" version="${project.version}">
       <feature>camel-blueprint</feature>
+      <feature>camel-kafka</feature>
       <feature>opennms-syslogd</feature>
 
       <bundle>blueprint:mvn:org.opennms.features.events/org.opennms.features.events.syslog/${project.version}/xml/blueprint-syslog-listener-javanet</bundle>
@@ -762,6 +763,7 @@
 
     <feature name="opennms-syslogd-listener-camel-netty" description="OpenNMS :: Syslogd :: Listener :: camel-netty" version="${project.version}">
       <feature>camel-blueprint</feature>
+      <feature>camel-kafka</feature>
       <feature>opennms-syslogd</feature>
 
       <bundle>blueprint:mvn:org.opennms.features.events/org.opennms.features.events.syslog/${project.version}/xml/blueprint-syslog-listener-camel-netty</bundle>
@@ -769,6 +771,7 @@
 
     <feature name="opennms-syslogd-listener-nio" description="OpenNMS :: Syslogd :: Listener :: NIO" version="${project.version}">
       <feature>camel-blueprint</feature>
+      <feature>camel-kafka</feature>
       <feature>opennms-syslogd</feature>
 
       <bundle>blueprint:mvn:org.opennms.features.events/org.opennms.features.events.syslog/${project.version}/xml/blueprint-syslog-listener-nio</bundle>
@@ -825,8 +828,8 @@
 
     <feature name="opennms-trapd-listener" description="OpenNMS :: Trapd :: Listener" version="${project.version}">
       <feature>camel-blueprint</feature>
+      <feature>camel-kafka</feature>
       <feature>opennms-trapd</feature>
-
       <bundle>blueprint:mvn:org.opennms.features.events/org.opennms.features.events.traps/${project.version}/xml/blueprint-trapd-listener</bundle>
     </feature>
 

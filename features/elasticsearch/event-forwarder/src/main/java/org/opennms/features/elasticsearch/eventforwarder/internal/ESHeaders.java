@@ -3,6 +3,7 @@ package org.opennms.features.elasticsearch.eventforwarder.internal;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.component.elasticsearch.ElasticsearchConfiguration;
+import org.apache.camel.component.elasticsearch.ElasticsearchConstants;
 import org.apache.camel.component.bean.BeanInvocation;
 import org.opennms.netmgt.alarmd.api.NorthboundAlarm;
 import org.opennms.netmgt.events.api.EventConstants;
@@ -110,8 +111,8 @@ public class ESHeaders {
             indexName = idxName.apply(remainder);
         }
         logger.trace("Computing indexName from @timestamp: " + body.get("@timestamp") + " yelds " + indexName);
-        exchange.getOut().setHeader(ElasticsearchConfiguration.PARAM_INDEX_NAME, indexName);
-        exchange.getOut().setHeader(ElasticsearchConfiguration.PARAM_INDEX_TYPE, indexType);
+        exchange.getOut().setHeader(ElasticsearchConstants.PARAM_INDEX_NAME, indexName);
+        exchange.getOut().setHeader(ElasticsearchConstants.PARAM_INDEX_TYPE, indexType);
         exchange.getOut().setBody(body);
     }
 

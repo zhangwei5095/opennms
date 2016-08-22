@@ -143,6 +143,47 @@
       </exclusions>
     </dependency>
     <dependency>
+      <groupId>org.apache.kafka</groupId>
+      <artifactId>kafka_2.11</artifactId>
+      <version>${kafkaVersion}</version>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>log4j</groupId>
+          <artifactId>log4j</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-log4j12</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.zookeeper</groupId>
+          <artifactId>zookeeper</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.kafka</groupId>
+      <artifactId>kafka_2.11</artifactId>
+      <version>${kafkaVersion}</version>
+      <scope>test</scope>
+      <classifier>test</classifier>
+      <exclusions>
+        <exclusion>
+          <groupId>log4j</groupId>
+          <artifactId>log4j</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-log4j12</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.zookeeper</groupId>
+          <artifactId>zookeeper</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
       <groupId>org.opennms</groupId>
       <artifactId>opennms-dao</artifactId>
       <scope>test</scope>
@@ -207,14 +248,12 @@
       <artifactId>org.opennms.core.test-api.camel</artifactId>
       <scope>test</scope>
     </dependency>
-    
-    <!-- HZN-742 -->
     <dependency>
-	 <groupId>org.apache.curator</groupId>
-	 <artifactId>curator-test</artifactId>
-	 <version>${curatorVersion}</version>
-	 <scope>test</scope>
-	 <exclusions>
+	  <groupId>org.apache.curator</groupId>
+	  <artifactId>curator-test</artifactId>
+	  <version>${curatorVersion}</version>
+	  <scope>test</scope>
+	  <exclusions>
 	 	<exclusion>
 	 		<artifactId>log4j</artifactId>
 	 		<groupId>log4j</groupId>
@@ -223,10 +262,7 @@
 	 		<artifactId>slf4j-log4j12</artifactId>
 	 		<groupId>org.slf4j</groupId>
 	 	</exclusion>
-	 </exclusions>
-    </dependency>
-
-	<!-- end of  HZN-742-->
-    
+	  </exclusions>
+     </dependency>
   </dependencies>
 </project>

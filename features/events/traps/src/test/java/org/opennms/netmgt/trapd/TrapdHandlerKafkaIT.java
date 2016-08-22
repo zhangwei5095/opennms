@@ -33,9 +33,6 @@ import java.util.Dictionary;
 import java.util.Map;
 import java.util.Properties;
 
-import kafka.server.KafkaConfig;
-import kafka.server.KafkaServer;
-
 import org.apache.camel.CamelContext;
 import org.apache.camel.Component;
 import org.apache.camel.Exchange;
@@ -54,15 +51,17 @@ import org.junit.runner.RunWith;
 import org.opennms.core.test.OpenNMSJUnit4ClassRunner;
 import org.opennms.core.test.camel.CamelBlueprintTest;
 import org.opennms.netmgt.snmp.TrapNotification;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.test.context.ContextConfiguration;
+
+import kafka.server.KafkaConfig;
+import kafka.server.KafkaServer;
+import kafka.utils.MockTime;
+import kafka.utils.TestUtils;
+import kafka.utils.Time;
 
 @RunWith(OpenNMSJUnit4ClassRunner.class)
 @ContextConfiguration(locations = { "classpath:/META-INF/opennms/emptyContext.xml" })
 public class TrapdHandlerKafkaIT extends CamelBlueprintTest {
-
-	private static final Logger LOG = LoggerFactory.getLogger(TrapdHandlerKafkaIT.class);
 
 	private static KafkaConfig kafkaConfig;
 	private KafkaServer kafkaServer;
@@ -94,7 +93,8 @@ public class TrapdHandlerKafkaIT extends CamelBlueprintTest {
 		properties.put("zookeeper.connect",zkTestServer.getConnectString());
 		try{
 			kafkaConfig = new KafkaConfig(properties);
-			kafkaServer = new KafkaServer(kafkaConfig, null);
+            Time kafkaTime = new MockTime();
+            kafkaServer = TestUtils.createServer(kafkaConfig, kafkaTime);
 			kafkaServer.startup();
 		}
 		catch(Exception e){
@@ -160,7 +160,7 @@ public class TrapdHandlerKafkaIT extends CamelBlueprintTest {
 						exchange.getIn().setBody("Test Message from Camel Kafka Component Final",String.class);
 						exchange.getIn().setHeader(KafkaConstants.PARTITION_KEY,simple("${body.hostname}"));
 					}
-				}).log("address:${body.sourceAddress}").log("port: ${body.port}").transform(simple("${body.byteBuffer}")).convertBodyTo(String.class).log(body().toString()).to("kafka:localhost:" + kafkaPort + "?topic=trapd;serializerClass=kafka.serializer.StringEncoder");
+				}).log("address:${body.sourceAddress}").log("port: ${body.port}").transform(simple("${body.byteBuffer}")).convertBodyTo(String.class).log(body().toString()).to("kafka:localhost:" + kafkaPort + "?topic=trapd;serializerClass= org.apache.kafka.common.serialization.StringSerializer");
 
 			}
 		});
@@ -169,7 +169,9 @@ public class TrapdHandlerKafkaIT extends CamelBlueprintTest {
 	}
 
 	@After
-	public void shutDownKafka(){
-		kafkaServer.shutdown();
+	public void shutDownKafka() {
+	    if (kafkaServer != null) {
+	        kafkaServer.shutdown();
+	    }
 	}
 }
