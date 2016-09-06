@@ -38,10 +38,11 @@
     <property name="password" value="#{T(java.lang.System).getProperty('org.opennms.activemq.broker.password', '')}" />
   </bean>
 
-  <bean id="pooledConnectionFactory" class="org.apache.activemq.pool.PooledConnectionFactory"
-    init-method="start" destroy-method="stop">
-    <property name="maxConnections" value="#{T(java.lang.System).getProperty('org.opennms.activemq.client.max-connections', '8')}" />
+  <bean id="pooledConnectionFactory" class="org.apache.activemq.pool.PooledConnectionFactory" init-method="start" destroy-method="stop">
     <property name="connectionFactory" ref="jmsConnectionFactory" />
+    <property name="maxConnections" value="#{T(java.lang.System).getProperty('org.opennms.activemq.client.max-connections', '8')}" />
+    <!-- NMS-8714: Recover from 'javax.jms.IllegalStateException: The Session is closed' exceptions -->
+    <property name="reconnectOnException" value="true" />
   </bean>
 
   <bean id="jmsConfig" class="org.apache.camel.component.jms.JmsConfiguration">

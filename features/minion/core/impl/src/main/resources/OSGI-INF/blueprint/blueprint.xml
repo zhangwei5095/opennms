@@ -57,9 +57,12 @@
 
     <!-- Setup JMS connection pooling -->
     <bean id="pooledConnectionFactory" class="org.apache.activemq.pool.PooledConnectionFactory" init-method="start" destroy-method="stop">
-       <property name="maxConnections" value="[[broker-max-connections]]" />
        <property name="connectionFactory" ref="jmsConnectionFactory" />
+       <property name="maxConnections" value="[[broker-max-connections]]" />
+       <!-- NMS-8714: Recover from 'javax.jms.IllegalStateException: The Session is closed' exceptions -->
+       <property name="reconnectOnException" value="true" />
     </bean>
+
     <bean id="jmsConfig"  class="org.apache.camel.component.jms.JmsConfiguration">
        <property name="connectionFactory" ref="pooledConnectionFactory"/>
        <property name="concurrentConsumers" value="[[broker-concurrent-consumers]]"/>
