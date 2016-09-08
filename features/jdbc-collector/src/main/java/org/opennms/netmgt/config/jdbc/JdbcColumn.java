@@ -33,9 +33,12 @@ import java.io.Serializable;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
 import org.apache.commons.lang.builder.CompareToBuilder;
 import org.apache.commons.lang.builder.EqualsBuilder;
+import org.opennms.netmgt.config.datacollection.AttributeType;
+import org.opennms.netmgt.config.datacollection.AttributeTypeAdapter;
 
 @XmlRootElement(name="column")
 public class JdbcColumn implements Serializable, Comparable<JdbcColumn> {
@@ -47,10 +50,11 @@ public class JdbcColumn implements Serializable, Comparable<JdbcColumn> {
     
     @XmlAttribute(name="data-source-name", required=false)
     private String m_dataSourceName;
-    
-    @XmlAttribute(name="type", required=true)    
-    private String m_dataType;
-    
+
+    @XmlAttribute(name="type", required=true)
+    @XmlJavaTypeAdapter(AttributeTypeAdapter.class)
+    private AttributeType m_dataType;
+
     @XmlAttribute(name="alias", required=true)
     private String m_alias;
     
@@ -71,17 +75,16 @@ public class JdbcColumn implements Serializable, Comparable<JdbcColumn> {
     public void setDataSourceName(String dataSourceName) {
         m_dataSourceName = dataSourceName;
     }
-    
+
     @XmlTransient
-    public String getDataType() {
+    public AttributeType getDataType() {
         return m_dataType;
     }
-    
-    public void setDataType(String dataType) {
+
+    public void setDataType(AttributeType dataType) {
         m_dataType = dataType;
     }
-    
-    
+
     @XmlTransient
     public String getAlias() {
         return m_alias;

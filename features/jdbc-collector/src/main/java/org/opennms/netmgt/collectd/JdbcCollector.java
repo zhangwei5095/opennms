@@ -34,7 +34,6 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -42,16 +41,19 @@ import org.opennms.core.db.DataSourceFactory;
 import org.opennms.core.spring.BeanUtils;
 import org.opennms.core.utils.ParameterMap;
 import org.opennms.netmgt.collectd.jdbc.JdbcAgentState;
-import org.opennms.netmgt.collectd.jdbc.JdbcCollectionAttributeType;
-import org.opennms.netmgt.collectd.jdbc.JdbcCollectionResource;
-import org.opennms.netmgt.collectd.jdbc.JdbcCollectionSet;
-import org.opennms.netmgt.collectd.jdbc.JdbcMultiInstanceCollectionResource;
-import org.opennms.netmgt.collectd.jdbc.JdbcSingleInstanceCollectionResource;
-import org.opennms.netmgt.collection.api.AttributeGroupType;
 import org.opennms.netmgt.collection.api.CollectionAgent;
 import org.opennms.netmgt.collection.api.CollectionException;
 import org.opennms.netmgt.collection.api.CollectionSet;
 import org.opennms.netmgt.collection.api.ServiceCollector;
+import org.opennms.netmgt.collection.api.StorageStrategy;
+import org.opennms.netmgt.collection.support.IndexStorageStrategy;
+import org.opennms.netmgt.collection.support.PersistAllSelectorStrategy;
+import org.opennms.netmgt.collection.support.builder.CollectionSetBuilder;
+import org.opennms.netmgt.collection.support.builder.CollectionStatus;
+import org.opennms.netmgt.collection.support.builder.GenericTypeResource;
+import org.opennms.netmgt.collection.support.builder.NodeLevelResource;
+import org.opennms.netmgt.collection.support.builder.Resource;
+import org.opennms.netmgt.config.datacollection.AttributeType;
 import org.opennms.netmgt.config.jdbc.JdbcColumn;
 import org.opennms.netmgt.config.jdbc.JdbcDataCollection;
 import org.opennms.netmgt.config.jdbc.JdbcQuery;
@@ -61,16 +63,14 @@ import org.opennms.netmgt.rrd.RrdRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.annotations.VisibleForTesting;
-
 public class JdbcCollector implements ServiceCollector {
     private static final Logger LOG = LoggerFactory.getLogger(JdbcCollector.class);
 
+    private final PersistAllSelectorStrategy persistAllSelectorStrategy = new PersistAllSelectorStrategy();
+    private final Map<Integer, JdbcAgentState> m_scheduledNodes = new HashMap<>();
+    private final Map<String, StorageStrategy> m_storageStrategyList = new HashMap<>();
     private JdbcDataCollectionConfigDao m_jdbcCollectionDao;
-    private final Map<Integer, JdbcAgentState> m_scheduledNodes = new HashMap<Integer, JdbcAgentState>();
-    private Map<String, AttributeGroupType> m_groupTypeList = new HashMap<String, AttributeGroupType>();
-    private Map<String, JdbcCollectionAttributeType> m_attribTypeList = new HashMap<String, JdbcCollectionAttributeType>();
-    
+
     public JdbcDataCollectionConfigDao getJdbcCollectionDao() {
         return m_jdbcCollectionDao;
     }
@@ -79,20 +79,11 @@ public class JdbcCollector implements ServiceCollector {
         m_jdbcCollectionDao = jdbcCollectionDao;
     }
     
-    private void loadAttributeGroupList(JdbcDataCollection collection) {
+    private void loadStorageStrategyList(JdbcDataCollection collection) {
         for (JdbcQuery query : collection.getQueries()) {
-            AttributeGroupType attribGroupType1 = new AttributeGroupType(query.getQueryName(), query.getIfType());
-            m_groupTypeList.put(query.getQueryName(), attribGroupType1);
-        }
-    }
-
-    private void loadAttributeTypeList(JdbcDataCollection collection) {
-        for (JdbcQuery query : collection.getQueries()) {
-            for (JdbcColumn column : query.getJdbcColumns()) {
-                AttributeGroupType attribGroupType = m_groupTypeList.get(query.getQueryName());
-                JdbcCollectionAttributeType attribType = new JdbcCollectionAttributeType(column, attribGroupType);
-                m_attribTypeList.put(column.getColumnName(), attribType);
-            }
+            IndexStorageStrategy storageStrategy = new IndexStorageStrategy();
+            storageStrategy.setResourceTypeName(query.getResourceType());
+            m_storageStrategyList.put(query.getQueryName(), storageStrategy);
         }
     }
 
@@ -190,19 +181,15 @@ public class JdbcCollector implements ServiceCollector {
             agentState = m_scheduledNodes.get(agent.getNodeId());
             agentState.setupDatabaseConnections(parameters);
         
-            // Load the attribute group types.
-            loadAttributeGroupList(collection);
+            // Load the storage strategies.
+            loadStorageStrategyList(collection);
 
-            // Load the attribute types.
-            loadAttributeTypeList(collection);
-        
             // Create a new collection set.
-            JdbcCollectionSet collectionSet = new JdbcCollectionSet();
-            collectionSet.setCollectionTimestamp(new Date());
+            CollectionSetBuilder builder = new CollectionSetBuilder(agent);
 
             // Creating a single resource object, because all node-level metric must belong to the exact same resource.
-            final JdbcSingleInstanceCollectionResource nodeResource = new JdbcSingleInstanceCollectionResource(agent);
-        
+            final NodeLevelResource nodeResource = new NodeLevelResource(agent.getNodeId());
+
             // Cycle through all of the queries for this collection
             for(JdbcQuery query : collection.getQueries()) {
                 // Verify if we should check for availability of a query.
@@ -239,33 +226,50 @@ public class JdbcCollector implements ServiceCollector {
                         results.last();
                         boolean singleInstance = (results.getRow()==1)?true:false;
                         results.beforeFirst();
-                        
+
                         // Iterate through each row.
                         while(results.next() ) {
-                            JdbcCollectionResource resource = null;
-                            
+                            Resource resource = null;
+
                             // Create the appropriate resource container.
                             if(singleInstance) {
                                 resource = nodeResource;
                             } else {
                                 // Retrieve the name of the column to use as the instance key for multi-row queries.
                                 String instance = results.getString(query.getInstanceColumn());
-                                resource = new JdbcMultiInstanceCollectionResource(agent,instance, query.getResourceType());
+                                resource = new GenericTypeResource(nodeResource, m_storageStrategyList.get(query.getQueryName()),
+                                        persistAllSelectorStrategy, instance);
                             }
-                            
+
                             for(JdbcColumn curColumn : query.getJdbcColumns()) {
+                                final AttributeType type = curColumn.getDataType();
+
                                 String columnName = null;
                                 if(curColumn.getDataSourceName() != null && curColumn.getDataSourceName().length() != 0) {
                                     columnName = curColumn.getDataSourceName();
                                 } else {
                                     columnName = curColumn.getColumnName();
                                 }
-                                
-                                JdbcCollectionAttributeType attribType = m_attribTypeList.get(curColumn.getColumnName());
-                                resource.setAttributeValue(attribType, results.getString(columnName));
-                            }
 
-                            collectionSet.getCollectionResources().add(resource);
+                                String columnValue = results.getString(columnName);
+                                if (columnValue == null) {
+                                    LOG.debug("Skipping column named '{}' with null value.", curColumn.getColumnName());
+                                    continue;
+                                }
+
+                                if (type.isNumeric()) {
+                                    Double numericValue = Double.NaN;
+                                    try {
+                                        numericValue = Double.parseDouble(columnValue);
+                                    } catch (NumberFormatException e) {
+                                        LOG.warn("Value '{}' for column named '{}' cannot be converted to a number. Skipping.", columnValue, curColumn.getColumnName());
+                                        continue;
+                                    }
+                                    builder.withNumericAttribute(resource, query.getQueryName(), curColumn.getAlias(), numericValue, type);
+                                } else {
+                                    builder.withStringAttribute(resource, query.getQueryName(), curColumn.getAlias(), columnValue);
+                                }
+                            }
                         }
                     }
                 } catch(SQLException e) {
@@ -278,8 +282,8 @@ public class JdbcCollector implements ServiceCollector {
                     agentState.closeConnection(con);
                 }
             }
-            collectionSet.setStatus(ServiceCollector.COLLECTION_SUCCEEDED);
-            return collectionSet;
+            builder.withStatus(CollectionStatus.SUCCEEDED);
+            return builder.build();
         } finally {
             // Make sure that when we're done we close all results, statements and connections.
             agentState.closeResultSet(results);
@@ -291,8 +295,7 @@ public class JdbcCollector implements ServiceCollector {
             }
         }
     }
-    
-    
+
     // Simply check the database the query is supposed to connect to to see if it is available.
     private static boolean isGroupAvailable(JdbcAgentState agentState, JdbcQuery query) {
         LOG.debug("Checking availability of group {}", query.getQueryName());
@@ -336,7 +339,6 @@ public class JdbcCollector implements ServiceCollector {
         return m_jdbcCollectionDao.getConfig().buildRrdRepository(collectionName);
     }
 
-    @VisibleForTesting
     protected Map<Integer, JdbcAgentState> getScheduledNodes() {
         return m_scheduledNodes;
     }

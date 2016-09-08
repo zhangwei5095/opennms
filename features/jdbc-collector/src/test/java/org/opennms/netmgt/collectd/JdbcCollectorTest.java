@@ -50,6 +50,7 @@ import org.opennms.netmgt.collectd.jdbc.JdbcAgentState;
 import org.opennms.netmgt.collection.api.CollectionAgent;
 import org.opennms.netmgt.collection.api.CollectionSet;
 import org.opennms.netmgt.collection.api.ServiceCollector;
+import org.opennms.netmgt.config.datacollection.AttributeType;
 import org.opennms.netmgt.config.jdbc.JdbcColumn;
 import org.opennms.netmgt.config.jdbc.JdbcDataCollection;
 import org.opennms.netmgt.config.jdbc.JdbcDataCollectionConfig;
@@ -79,7 +80,7 @@ public class JdbcCollectorTest {
         JdbcColumn column = new JdbcColumn();
         column.setColumnName("someColumnName");
         column.setAlias("someAlias");
-        column.setDataType("gauge");
+        column.setDataType(AttributeType.GAUGE);
         query.addJdbcColumn(column);
 
         JdbcDataCollection collection = new JdbcDataCollection();
@@ -111,13 +112,13 @@ public class JdbcCollectorTest {
         JdbcColumn spcnameColumn = new JdbcColumn();
         spcnameColumn.setColumnName("spcname");
         spcnameColumn.setAlias("spcname");
-        spcnameColumn.setDataType("string");
+        spcnameColumn.setDataType(AttributeType.STRING);
         query.addJdbcColumn(spcnameColumn);
 
         JdbcColumn tssizeColumn = new JdbcColumn();
         tssizeColumn.setColumnName("ts_size");
         tssizeColumn.setAlias("ts_size");
-        tssizeColumn.setDataType("gauge");
+        tssizeColumn.setDataType(AttributeType.GAUGE);
         query.addJdbcColumn(tssizeColumn);
 
         JdbcDataCollection collection = new JdbcDataCollection();
