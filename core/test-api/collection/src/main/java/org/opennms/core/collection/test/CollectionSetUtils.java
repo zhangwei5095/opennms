@@ -28,6 +28,8 @@
 
 package org.opennms.core.collection.test;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import org.opennms.netmgt.collection.api.AttributeGroup;
@@ -35,6 +37,7 @@ import org.opennms.netmgt.collection.api.CollectionAttribute;
 import org.opennms.netmgt.collection.api.CollectionSet;
 import org.opennms.netmgt.collection.support.AbstractCollectionSetVisitor;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class CollectionSetUtils {
@@ -73,5 +76,37 @@ public class CollectionSetUtils {
             }
         });
         return attributesByName;
+    }
+
+    /**
+     * Generates a sorted list of strings that can be used to identify all
+     * the attributes in the given collection set.
+     *
+     * This is useful for validating the collection set's contents.
+     *
+     * @param collectionSet
+     * @return
+     */
+    public static List<String> toStrings(CollectionSet collectionSet) {
+        final List<String> keys = Lists.newArrayList();
+        collectionSet.visit(new AbstractCollectionSetVisitor() {
+            private String groupName = null;
+
+            @Override
+            public void visitGroup(AttributeGroup group) {
+                groupName = group.getName();
+            }
+
+            @Override
+            public void visitAttribute(CollectionAttribute attribute) {
+                final boolean isNumeric = attribute.getNumericValue() != null;
+                keys.add(String.format("%s/%s/%s/%s/%s", attribute.getResource().getPath().toString(),
+                        groupName, attribute.getName(),
+                        isNumeric ? "NUMERIC" : "STRING",
+                        isNumeric ? attribute.getNumericValue() :attribute.getStringValue()));
+            }
+        });
+        Collections.sort(keys);
+        return keys;
     }
 }
