@@ -49,6 +49,7 @@ import org.opennms.core.test.http.annotations.JUnitHttpServer;
 import org.opennms.core.test.http.annotations.Webapp;
 import org.opennms.core.xml.JaxbUtils;
 import org.opennms.netmgt.collection.api.CollectionAgent;
+import org.opennms.netmgt.collection.api.CollectionSet;
 import org.opennms.netmgt.collection.api.CollectionSetVisitor;
 import org.opennms.netmgt.collection.api.ServiceCollector;
 import org.opennms.netmgt.collection.api.ServiceParameters;
@@ -168,7 +169,7 @@ public class HttpDataCollectionIT {
         collector.setRrdRepository(repository);
         collector.setServiceName("HTTP");
 
-        XmlCollectionSet collectionSet = collector.collect(m_collectionAgent, collection, parameters);
+        CollectionSet collectionSet = collector.collect(m_collectionAgent, collection, parameters);
         Assert.assertEquals(ServiceCollector.COLLECTION_SUCCEEDED, collectionSet.getStatus());
 
         ServiceParameters serviceParams = new ServiceParameters(new HashMap<String,Object>());
@@ -206,7 +207,7 @@ public class HttpDataCollectionIT {
         collector.setRrdRepository(repository);
         collector.setServiceName("HTTP");
 
-        XmlCollectionSet collectionSet = collector.collect(m_collectionAgent, collection, parameters);
+        CollectionSet collectionSet = collector.collect(m_collectionAgent, collection, parameters);
         Assert.assertEquals(ServiceCollector.COLLECTION_SUCCEEDED, collectionSet.getStatus());
 
         ServiceParameters serviceParams = new ServiceParameters(new HashMap<String,Object>());
@@ -244,7 +245,7 @@ public class HttpDataCollectionIT {
         collector.setRrdRepository(repository);
         collector.setServiceName("HTTP");
 
-        XmlCollectionSet collectionSet = collector.collect(m_collectionAgent, collection, parameters);
+        CollectionSet collectionSet = collector.collect(m_collectionAgent, collection, parameters);
         Assert.assertEquals(ServiceCollector.COLLECTION_SUCCEEDED, collectionSet.getStatus());
 
         ServiceParameters serviceParams = new ServiceParameters(new HashMap<String,Object>());
@@ -282,7 +283,7 @@ public class HttpDataCollectionIT {
         collector.setRrdRepository(repository);
         collector.setServiceName("HTTP");
 
-        XmlCollectionSet collectionSet = collector.collect(m_collectionAgent, collection, parameters);
+        CollectionSet collectionSet = collector.collect(m_collectionAgent, collection, parameters);
         Assert.assertEquals(ServiceCollector.COLLECTION_SUCCEEDED, collectionSet.getStatus());
 
         ServiceParameters serviceParams = new ServiceParameters(new HashMap<String,Object>());

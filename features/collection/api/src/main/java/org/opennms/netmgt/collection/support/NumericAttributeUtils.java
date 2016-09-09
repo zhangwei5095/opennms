@@ -1,8 +1,8 @@
 /*******************************************************************************
  * This file is part of OpenNMS(R).
  *
- * Copyright (C) 2011-2014 The OpenNMS Group, Inc.
- * OpenNMS(R) is Copyright (C) 1999-2014 The OpenNMS Group, Inc.
+ * Copyright (C) 2006-2016 The OpenNMS Group, Inc.
+ * OpenNMS(R) is Copyright (C) 1999-2016 The OpenNMS Group, Inc.
  *
  * OpenNMS(R) is a registered trademark of The OpenNMS Group, Inc.
  *
@@ -26,35 +26,23 @@
  *     http://www.opennms.com/
  *******************************************************************************/
 
-package org.opennms.protocols.xml.collector;
+package org.opennms.netmgt.collection.support;
 
-import org.opennms.netmgt.collection.api.CollectionAttribute;
-import org.opennms.netmgt.collection.support.AbstractCollectionSetVisitor;
+public abstract class NumericAttributeUtils {
 
-/**
- * The Class XmlAttributeCounter.
- * 
- * @author <a href="mailto:agalue@opennms.org">Alejandro Galue</a>
- */
-public class XmlAttributeCounter extends AbstractCollectionSetVisitor {
+    public static Double parseNumericValue(String value) {
+        if (value == null) {
+            return Double.NaN;
+        }
 
-    /** The count of attributes. */
-    private int count = 0;
-
-    /* (non-Javadoc)
-     * @see org.opennms.netmgt.collection.support.AbstractCollectionSetVisitor#visitAttribute(org.opennms.netmgt.collection.api.CollectionAttribute)
-     */
-    @Override
-    public void visitAttribute(CollectionAttribute attribute) {
-        count++;
-    }
-
-    /**
-     * Gets the count of attributes.
-     *
-     * @return the count
-     */
-    public int getCount() {
-        return count;
+        try {
+            return Double.parseDouble(value);
+        } catch (NumberFormatException e1) {
+            try {
+                return Double.parseDouble(value.replaceAll("[^-\\d.]+", "")); // Removing Units to return only a numeric value.
+            } catch (NumberFormatException e2) {
+                return Double.NaN;
+            }
+        }
     }
 }
