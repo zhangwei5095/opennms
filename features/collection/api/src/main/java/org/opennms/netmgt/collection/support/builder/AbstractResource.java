@@ -28,37 +28,19 @@
 
 package org.opennms.netmgt.collection.support.builder;
 
-import java.nio.file.Path;
-
-import org.opennms.netmgt.collection.api.CollectionResource;
 import org.opennms.netmgt.collection.api.TimeKeeper;
 
-public interface Resource {
+public abstract class AbstractResource implements Resource {
 
-    public Resource getParent();
+    private TimeKeeper m_timeKeeper;
 
-    /**
-     * Returns a unique name for the instance of this resource.
-     * Used by the {@link org.opennms.netmgt.collection.support.IndexStorageStrategy}
-     *
-     * @return instance name
-     */
-    public String getInstance();
+    public void setTimeKeeper(TimeKeeper timeKeeper) {
+        m_timeKeeper = timeKeeper;
+    }
 
-    /**
-     * Retrieves the path of the resource, relative to the repository root.
-     *
-     * @param resource Used by the {@link GenericTypeResource} in order to determine the instance name.
-     * @return relative path
-     */
-    public Path getPath(CollectionResource resource);
-
-    /**
-     * Returns the {@link TimeKeeper} to used for attributes associated with this resource.
-     *
-     * @return a {@link TimeKeeper} instance, or null if the
-     *         {@link org.opennms.netmgt.collection.support.DefaultTimeKeeper} should be used.
-     */
-    public TimeKeeper getTimeKeeper();
+    @Override
+    public TimeKeeper getTimeKeeper() {
+        return m_timeKeeper;
+    }
 
 }

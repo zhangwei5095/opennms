@@ -33,7 +33,7 @@ import java.nio.file.Paths;
 
 import org.opennms.netmgt.collection.api.CollectionResource;
 
-public class InterfaceLevelResource implements Resource {
+public class InterfaceLevelResource extends AbstractResource {
 
     private NodeLevelResource m_node;
     private String m_ifName;

@@ -31,7 +31,6 @@ package org.opennms.netmgt.collectd.tca;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.UndeclaredThrowableException;
-import java.util.Date;
 import java.util.Map;
 
 import org.opennms.core.spring.BeanUtils;
@@ -120,7 +119,7 @@ public class TcaCollector implements ServiceCollector {
 	 */
 	@Override
 	public void release(CollectionAgent agent) {
-		LOG.debug("release: realeasing TCA collection for agent {}", agent);
+		LOG.debug("release: releasing TCA collection for agent {}", agent);
 	}
 
 	/* (non-Javadoc)
@@ -136,10 +135,8 @@ public class TcaCollector implements ServiceCollector {
 			if (collectionName == null) {
 				throw new CollectionException("Parameter collection is required for the TCA Collector!");
 			}
-			TcaCollectionSet collectionSet = new TcaCollectionSet((SnmpCollectionAgent)agent, getRrdRepository(collectionName), m_resourceStorageDao);
-			collectionSet.setCollectionTimestamp(new Date());
-			collectionSet.collect();
-			return collectionSet;
+			TcaCollectionHandler collectionHandler = new TcaCollectionHandler((SnmpCollectionAgent)agent, getRrdRepository(collectionName), m_resourceStorageDao);
+			return collectionHandler.collect();
 		} catch (Throwable t) {
 			throw new CollectionException("Unexpected error during node TCA collection for: " + agent.getHostAddress() + ": " + t, t);
 		}

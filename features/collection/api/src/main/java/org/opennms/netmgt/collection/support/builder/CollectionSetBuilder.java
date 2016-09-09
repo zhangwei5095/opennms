@@ -43,6 +43,7 @@ import org.opennms.netmgt.collection.api.CollectionAttribute;
 import org.opennms.netmgt.collection.api.CollectionResource;
 import org.opennms.netmgt.collection.api.CollectionSet;
 import org.opennms.netmgt.collection.api.Persister;
+import org.opennms.netmgt.collection.api.TimeKeeper;
 import org.opennms.netmgt.collection.support.AbstractCollectionAttribute;
 import org.opennms.netmgt.collection.support.AbstractCollectionAttributeType;
 import org.opennms.netmgt.collection.support.AbstractCollectionResource;
@@ -108,34 +109,42 @@ public class CollectionSetBuilder {
         return this;
     }
 
+    public static AbstractCollectionResource toCollectionResource(Resource resource, CollectionAgent agent) {
+        return new AbstractCollectionResource(agent) {
+            @Override
+            public String getResourceTypeName() {
+                return "*";
+            }
+
+            @Override
+            public String getInstance() {
+                return resource.getInstance();
+            }
+
+            @Override
+            public Path getPath() {
+                return super.getPath().resolve(resource.getPath(this));
+            }
+
+            @Override
+            public TimeKeeper getTimeKeeper() {
+                return resource.getTimeKeeper();
+            }
+
+            @Override
+            public String toString() {
+                return String.format("Resource[%s]/Node[%d]", resource, m_agent.getNodeId());
+            }
+        };
+    }
+
     public CollectionSet build() {
         MultiResourceCollectionSet<CollectionResource> collectionSet = new MultiResourceCollectionSet<CollectionResource>() {};
         collectionSet.setCollectionTimestamp(m_timestamp);
         collectionSet.setStatus(m_status.getCode());
         for (final Entry<Resource, List<Attribute<?>>> entry : m_attributesByResource.entrySet()) {
             final Resource resource = entry.getKey();
-            final AbstractCollectionResource collectionResource = new AbstractCollectionResource(m_agent) {
-                @Override
-                public String getResourceTypeName() {
-                    return "*";
-                }
-
-                @Override
-                public String getInstance() {
-                    return resource.getInstance();
-                }
-
-                @Override
-                public Path getPath() {
-                    return super.getPath().resolve(resource.getPath(this));
-                }
-
-                @Override
-                public String toString() {
-                    return String.format("Resource[%s]/Node[%d]", resource, m_agent.getNodeId());
-                }
-            };
-    
+            final AbstractCollectionResource collectionResource = toCollectionResource(resource, m_agent);
             for (Attribute<?> attribute : entry.getValue()) {
                 final AttributeGroupType groupType = new AttributeGroupType(attribute.getGroup(), AttributeGroupType.IF_TYPE_ALL);
                 final AbstractCollectionAttributeType attributeType = new AbstractCollectionAttributeType(groupType) {

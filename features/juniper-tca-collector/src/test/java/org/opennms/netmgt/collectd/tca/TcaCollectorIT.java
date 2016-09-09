@@ -46,6 +46,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
+import org.opennms.core.collection.test.CollectionSetUtils;
 import org.opennms.core.spring.BeanUtils;
 import org.opennms.core.test.MockLogAppender;
 import org.opennms.core.test.OpenNMSJUnit4ClassRunner;
@@ -276,8 +277,8 @@ public class TcaCollectorIT implements InitializingBean {
 		collectionSet.visit(persister);
 
 		// Validate Persisted Data
-		Path pathToJrbFile = getSnmpRoot().toPath().resolve(Paths.get("1", TcaCollectionResource.RESOURCE_TYPE_NAME,
-		        "171.19.37.60", TcaCollectionSet.INBOUND_DELAY + m_rrdStrategy.getDefaultFileExtension()));
+		Path pathToJrbFile = getSnmpRoot().toPath().resolve(Paths.get("1", TcaCollectionHandler.RESOURCE_TYPE_NAME,
+		        "171.19.37.60", TcaCollectionHandler.INBOUND_DELAY + m_rrdStrategy.getDefaultFileExtension()));
 		RrdDb jrb = new RrdDb(pathToJrbFile.toString());
 
 		// According with the Fixed Step
@@ -297,15 +298,12 @@ public class TcaCollectorIT implements InitializingBean {
 	/**
 	 * Validate collection set.
 	 * <p>Each collection set must contain:<br>
-	 * 25 Samples of each of 2 peers = 50 resources</p>
-	 * 
+	 * 25 Samples of each of 2 peers, each 5 attributes = 250 attributes</p>
+	 *
 	 * @param collectionSet the collection set
 	 */
 	private void validateCollectionSet(CollectionSet collectionSet) {
-		Assert.assertTrue(collectionSet instanceof TcaCollectionSet);
-		TcaCollectionSet tcaCollection = (TcaCollectionSet) collectionSet;
-		Assert.assertFalse(tcaCollection.getCollectionResources().isEmpty());
-		Assert.assertEquals(50, tcaCollection.getCollectionResources().size());
+		Assert.assertEquals(250, CollectionSetUtils.toStrings(collectionSet).size());
 	}
 
 	public File getSnmpRoot() {

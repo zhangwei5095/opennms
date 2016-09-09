@@ -37,7 +37,7 @@ import org.opennms.netmgt.collection.api.StorageStrategy;
 import org.opennms.netmgt.config.datacollection.ResourceType;
 import org.springframework.orm.ObjectRetrievalFailureException;
 
-public class GenericTypeResource implements Resource {
+public class GenericTypeResource extends AbstractResource {
 
     private final NodeLevelResource m_node;
     private final String m_instance;
